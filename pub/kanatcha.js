@@ -42,6 +42,7 @@ function submit() {
 	$input.val('');
 	var data = {c: challengeId, a: answer};
 	data.handle = $handle.val();
+	localStorage.setItem('captchaName', data.handle);
 	submitReq = $.ajax('solve', {
 		data: data,
 		dataType: 'json',
@@ -119,7 +120,7 @@ function getScores() {
 }
 
 $(function () {
-	$handle = $('#name');
+	$handle = $('#name').val(localStorage.getItem('captchaName'));
 	$scores = $('<table/>').css('float', 'right').appendTo('body');
 	getScores();
 
