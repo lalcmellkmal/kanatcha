@@ -18,6 +18,11 @@
 つ:tsu,tu
 て:te
 と:to
+な:na
+に:ni
+ぬ:nu
+ね:ne
+の:no
 は:ha,wa
 ひ:hi
 ふ:fu,hu
