@@ -4,6 +4,9 @@ var $img, $prompt, $input;
 var refreshReq, submitReq, challengeId;
 var highlightTimer;
 
+var $handle, $scores;
+var pollTimer;
+
 function loadCaptcha() {
 	if (refreshReq)
 		refreshReq.abort();
@@ -37,8 +40,10 @@ function submit() {
 	if (!challengeId || !answer)
 		return;
 	$input.val('');
+	var data = {c: challengeId, a: answer};
+	data.handle = $handle.val();
 	submitReq = $.ajax('solve', {
-		data: {c: challengeId, a: answer},
+		data: data,
 		dataType: 'json',
 		type: 'POST',
 		success: onVerdict,
@@ -82,7 +87,29 @@ function install($target) {
 	loadCaptcha();
 }
 
+function getScores() {
+	$.ajax('scores', {
+		dataType: 'json',
+		success: function (data) {
+			$scores.empty();
+			for (var i = 0; i < data.scores.length; i++) {
+				var info = data.scores[i];
+				var $name = $('<th/>').text(info.name);
+				var $score = $('<td/>').text(info.score);
+				$('<tr/>').append($name, $score).appendTo($scores);
+			}
+		},
+		complete: function () {
+			pollTimer = setTimeout(getScores, 30 * 1000);
+		},
+	});
+}
+
 $(function () {
+	$handle = $('#name');
+	$scores = $('<table/>').css('float', 'right').appendTo('body');
+	getScores();
+
 	install($('<div/>').appendTo('body'));
 });
 

@@ -33,11 +33,7 @@ app.use(function (req, resp, next) {
 				c: id,
 				image: 'image?c=' + encodeURIComponent(id),
 			};
-			resp.writeHead(200, {
-				'Content-Type': 'application/json',
-				'Expires': 'Thu, 01 Jan 1970 00:00:00 GMT',
-				'Cache-Control': 'no-cache',
-			});
+			resp.writeHead(200, noCacheJsonHeaders);
 			resp.end(JSON.stringify(info));
 		});
 	}
@@ -108,12 +104,42 @@ app.use(function (req, resp, next) {
 				respond('Incorrect.');
 				return;
 			}
-			respond('Correct!', {success: true});
+
+			var handle = (req.body.handle || '');
+			handle = handle.replace(/\s+/g, ' ').trim().slice(0, 50);
+			if (!handle) {
+				respond('Correct!', {success: true});
+				return;
+			}
+			db.zincrby('kanatcha:scores', 1, handle, function (err) {
+				if (err)
+					console.warn(err);
+				respond('Correct!', {success: true});
+			});
+		});
+	}
+	else if (u.pathname == '/scores' && verb == 'GET') {
+		db.zrevrange('kanatcha:scores', 0, 20, 'withscores', function (err, scores) {
+			if (err) {
+				resp.writeHead(500);
+				resp.end();
+			}
+			var ranks = [];
+			for (var i = 0; i < scores.length; i += 2)
+				ranks.push({name: scores[i], score: scores[i+1]});
+			resp.writeHead(200, noCacheJsonHeaders);
+			resp.end(JSON.stringify({scores: ranks}));
 		});
 	}
 	else
 		next();
 });
+
+var noCacheJsonHeaders = {
+	'Content-Type': 'application/json',
+	'Expires': 'Thu, 01 Jan 1970 00:00:00 GMT',
+	'Cache-Control': 'no-cache',
+};
 
 function randomLetters() {
 	return (Math.floor(Math.random() * 1e16) + 1e16).toString(36).slice(1);
