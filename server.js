@@ -91,7 +91,7 @@ app.use(function (req, resp, next) {
 			}
 			var info = rs[0];
 			if (!info || rs[1] != 1) {
-				respond('Already attempted or expired.');
+				respond('Expired. Try again.');
 				return;
 			}
 			info = JSON.parse(info);
