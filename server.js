@@ -111,10 +111,10 @@ app.use(function (req, resp, next) {
 				respond('Correct!', {success: true});
 				return;
 			}
-			db.zincrby('kanatcha:scores', 1, handle, function (err) {
+			db.zincrby('kanatcha:scores', 1, handle, function (err, score) {
 				if (err)
 					console.warn(err);
-				respond('Correct!', {success: true});
+				respond('Correct!', {success: true, name: handle, score: score});
 			});
 		});
 	}

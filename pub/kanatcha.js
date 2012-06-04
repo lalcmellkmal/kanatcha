@@ -63,6 +63,17 @@ function onVerdict(data) {
 			highlightTimer = 0;
 		}, 1000);
 	}
+	if (data.name && data.score) {
+		var found = false;
+		$scores.find('th').each(function () {
+			if ($(this).text() == data.name) {
+				$(this).next().text(data.score);
+				found = true;
+			}
+		});
+		if (!found)
+			addScoreRow(data);
+	}
 	loadCaptcha();
 }
 
@@ -87,20 +98,22 @@ function install($target) {
 	loadCaptcha();
 }
 
+function addScoreRow(info) {
+	var $name = $('<th/>').text(info.name);
+	var $score = $('<td/>').text(info.score);
+	$('<tr/>').append($name, $score).appendTo($scores);
+}
+
 function getScores() {
 	$.ajax('scores', {
 		dataType: 'json',
 		success: function (data) {
 			$scores.empty();
-			for (var i = 0; i < data.scores.length; i++) {
-				var info = data.scores[i];
-				var $name = $('<th/>').text(info.name);
-				var $score = $('<td/>').text(info.score);
-				$('<tr/>').append($name, $score).appendTo($scores);
-			}
+			for (var i = 0; i < data.scores.length; i++)
+				addScoreRow(data.scores[i]);
 		},
 		complete: function () {
-			pollTimer = setTimeout(getScores, 30 * 1000);
+			pollTimer = setTimeout(getScores, 10 * 1000);
 		},
 	});
 }
