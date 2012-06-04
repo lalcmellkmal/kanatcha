@@ -11,8 +11,8 @@ var TIMEOUT = 60;
 
 var app = connect();
 app.use(connect.static('pub'));
+app.use(connect.bodyParser());
 app.use(function (req, resp, next) {
-	/* XXX: Ought to use POST */
 	var u = urlParse(req.url, true);
 	var verb = req.method.toUpperCase();
 	var notHead = (verb != 'HEAD') ? true : '';
@@ -20,7 +20,7 @@ app.use(function (req, resp, next) {
 		resp.writeHead(200, {'Content-Type': 'text/html'});
 		resp.end(notHead && indexHtml);
 	}
-	else if (u.pathname == '/refresh' && verb == 'GET') {
+	else if (u.pathname == '/refresh' && verb == 'POST') {
 		/* TODO: worker thread etc. instead of on-demand */
 		generate(function (err, id) {
 			if (err) {
@@ -41,7 +41,7 @@ app.use(function (req, resp, next) {
 			resp.end(JSON.stringify(info));
 		});
 	}
-	else if (u.pathname == '/image' && u.query.c) {
+	else if (u.pathname == '/image' && verb == 'GET' && u.query.c) {
 		var externalId = u.query.c;
 		if (!sanityCheckExternalId(externalId)) {
 			resp.writeHead(404);
@@ -70,8 +70,8 @@ app.use(function (req, resp, next) {
 			});
 		});
 	}
-	else if (u.pathname == '/solve') {
-		var input = u.query.a, externalId = u.query.c;
+	else if (u.pathname == '/solve' && verb == 'POST') {
+		var input = req.body.a, externalId = req.body.c;
 		if (!sanityCheckExternalId(externalId) || !input) {
 			resp.writeHead(404);
 			resp.end();

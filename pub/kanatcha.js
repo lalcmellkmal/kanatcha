@@ -11,6 +11,7 @@ function loadCaptcha() {
 	$img.attr('src', '');
 	refreshReq = $.ajax('refresh', {
 		dataType: 'json',
+		type: 'POST',
 		success: onChallenge,
 		error: onError,
 		complete: function () { refreshReq = null; },
@@ -39,6 +40,7 @@ function submit() {
 	submitReq = $.ajax('solve', {
 		data: {c: challengeId, a: answer},
 		dataType: 'json',
+		type: 'POST',
 		success: onVerdict,
 		error: onError,
 		complete: function () { submitReq = null; },
