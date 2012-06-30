@@ -11,7 +11,12 @@ var config = {
 	TILT: [5, 10],
 };
 
-var allKana = fs.readFileSync('alphabet.txt', 'UTF-8').replace(/\s+/g, '');
+var allKana;
+var answers = {};
+
+function loadQuestions(file) {
+	allKana = fs.readFileSync(file, 'UTF-8').replace(/\s+/g, '');
+}
 
 function pickKana() {
 	return allKana[Math.floor(allKana.length * Math.random())];
@@ -57,15 +62,13 @@ function makeCaptcha(file, callback) {
 }
 exports.makeCaptcha = makeCaptcha;
 
-var answers = {};
-
 function loadAnswers(file) {
 	file.split('\n').forEach(function (line) {
 		if (!line.trim())
 			return;
 		var m = line.match(/^(.):(.+)\s*$/);
 		if (!m) {
-			console.warn("Bad answers.txt line: " + line);
+			console.warn("Bad solution line: " + line);
 			return;
 		}
 		if (m[1] in answers)
@@ -73,8 +76,6 @@ function loadAnswers(file) {
 		answers[m[1]] = m[2].split(',');
 	});
 }
-
-loadAnswers(fs.readFileSync('answers.txt', 'UTF-8'));
 
 function checkAnswer(target, input) {
 	var i, j;
@@ -111,6 +112,18 @@ function checkAnswer(target, input) {
 	return input == '';
 }
 exports.checkAnswer = checkAnswer;
+
+function setup() {
+	fs.readdirSync('lvl').forEach(function (txt) {
+		loadQuestions(require('path').join('lvl', txt));
+	});
+	fs.readdirSync('sol').forEach(function (txt) {
+		txt = require('path').join('sol', txt);
+		loadAnswers(fs.readFileSync(txt, 'UTF-8'));
+	});
+}
+
+setup();
 
 if (require.main === module) {
 	makeCaptcha('captcha.png', console.log.bind(console));
