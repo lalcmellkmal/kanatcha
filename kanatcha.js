@@ -13,6 +13,8 @@ var config = {
 var questions = {};
 var answers = {};
 
+exports.maxLevel = 2;
+
 function makeQuestion(level) {
 	var q = [], bonus = level + 1;
 	switch (level) {

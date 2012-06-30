@@ -3,8 +3,6 @@ var connect = require('connect'),
     kanatcha = require('./kanatcha'),
     urlParse = require('url').parse;
 
-var indexHtml = fs.readFileSync('index.html');
-
 var db = require('redis').createClient();
 
 var TIMEOUT = 60;
@@ -22,7 +20,7 @@ app.use(function (req, resp, next) {
 	}
 	else if (u.pathname == '/refresh' && verb == 'POST') {
 		/* TODO: worker thread etc. instead of on-demand */
-		generate(function (err, id) {
+		generate(parseLevel(req.body.lev), function (err, id) {
 			if (err) {
 				console.error(err);
 				resp.writeHead(500);
@@ -120,7 +118,7 @@ app.use(function (req, resp, next) {
 				respond(praise, extra);
 				return;
 			}
-			db.zincrby('kanatcha:scores', 1, handle, function (err, score) {
+			db.zincrby(scoresKey(info.level), 1, handle, function (err, score) {
 				if (err)
 					console.warn(err);
 				extra.name = handle;
@@ -130,7 +128,8 @@ app.use(function (req, resp, next) {
 		});
 	}
 	else if (u.pathname == '/scores' && verb == 'GET') {
-		db.zrevrange('kanatcha:scores', 0, 20, 'withscores', function (err, scores) {
+		var level = parseLevel(u.query.level);
+		db.zrevrange(scoresKey(level), 0, 20, 'withscores', function (err, scores) {
 			if (err) {
 				resp.writeHead(500);
 				resp.end();
@@ -146,11 +145,21 @@ app.use(function (req, resp, next) {
 		next();
 });
 
+var indexHtml = fs.readFileSync('index.html', 'UTF-8').replace('$MAX', kanatcha.maxLevel);
+
 var noCacheJsonHeaders = {
 	'Content-Type': 'application/json',
 	'Expires': 'Thu, 01 Jan 1970 00:00:00 GMT',
 	'Cache-Control': 'no-cache',
 };
+
+function parseLevel(level) {
+	return Math.max(0, Math.min(kanatcha.maxLevel, parseInt(level, 10) || 0));
+}
+
+function scoresKey(level) {
+	return 'kanatcha:scores:level:' + level;
+}
 
 function randomLetters() {
 	return (Math.floor(Math.random() * 1e16) + 1e16).toString(36).slice(1);
@@ -168,17 +177,16 @@ function imageFilename(id) {
 	return 'imgs/captcha' + id + '.png';
 }
 
-function generate(cb) {
+function generate(level, cb) {
 	db.incr('kanatcha:idCtr', function (err, internalId) {
 		if (err)
 			return cb(err);
 		var filename = imageFilename(internalId);
-		var level = 0;
 		kanatcha.makeCaptcha(level, filename, function (err, target) {
 			if (err)
 				return cb(err);
 			var externalId = generateExternalId();
-			var info = {id: internalId, target: target};
+			var info = {id: internalId, target: target, level: level};
 
 			/* Poor man's clean-up */
 			db.setex('kanatcha:c:' + externalId, TIMEOUT, JSON.stringify(info), function (err) {

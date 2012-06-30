@@ -4,8 +4,9 @@ var $img, $prompt, $hint, $input;
 var refreshReq, submitReq, challengeId;
 var highlightTimer;
 
-var $handle, $scores;
-var pollTimer;
+var $handle, $scores, $nav;
+var kanjiLevel = -1;
+var pollTimer, pollReq;
 
 function loadCaptcha() {
 	if (refreshReq)
@@ -13,6 +14,7 @@ function loadCaptcha() {
 	challengeId = null;
 	$img.attr('src', '');
 	refreshReq = $.ajax('refresh', {
+		data: {lev: kanjiLevel},
 		dataType: 'json',
 		type: 'POST',
 		success: onChallenge,
@@ -113,25 +115,65 @@ function addScoreRow(info) {
 }
 
 function getScores() {
-	$.ajax('scores', {
+	if (pollReq)
+		pollReq.abort();
+	if (pollTimer)
+		clearTimeout(pollTimer);
+
+	var level = kanjiLevel;
+	pollReq = $.ajax('scores', {
+		data: {level: level},
 		dataType: 'json',
 		success: function (data) {
 			$scores.empty();
+			var $header = $('<th/>').text(levelName(level) + ' top scores');
+			$('<tr colspan=2>').append($header).appendTo($scores);
 			for (var i = 0; i < data.scores.length; i++)
 				addScoreRow(data.scores[i]);
 		},
 		complete: function () {
-			pollTimer = setTimeout(getScores, 10 * 1000);
+			pollReq = null;
+			pollTimer = setTimeout(function () {
+				pollTimer = 0;
+				getScores();
+			}, 10 * 1000);
 		},
 	});
 }
 
-$(function () {
-	$handle = $('#name').val(localStorage.getItem('captchaName'));
-	$scores = $('<table/>').css('float', 'right').appendTo('body');
-	getScores();
+function levelName(level) {
+	return level ? 'Kanji Level ' + level : 'Hiragana';
+}
 
-	install($('<div/>').appendTo('body'));
+function setupNav() {
+	$nav = $('nav').append('Level: ');
+	for (var i = 0; i <= maxLevel; i++)
+		$nav.append($('<a>', {href: i, text: i || 'hiragana'}), ' ');
+	$nav.on('click', 'a', function (event) {
+		event.preventDefault();
+		changeLevel($(event.target).attr('href'));
+		loadCaptcha();
+	});
+	changeLevel(localStorage.getItem('captchaLevel') || 0);
+}
+
+function changeLevel(n) {
+	n = parseInt(n, 10);
+	if (n == kanjiLevel)
+		return;
+	$('.selected').removeClass('selected');
+	$nav.find('a[href='+n+']').addClass('selected');
+	kanjiLevel = n;
+	localStorage.setItem('captchaLevel', n);
+	getScores();
+}
+
+$(function () {
+	setupNav();
+	$handle = $('#name').val(localStorage.getItem('captchaName'));
+	$scores = $('<table/>').css('float', 'right').prependTo('body');
+	getScores();
+	install($('#kanatcha'));
 });
 
 })();

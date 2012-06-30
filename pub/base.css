@@ -1,5 +1,17 @@
+body {
+	background-color: #fafafa;
+}
 img {
 	border: 1px solid #333;
 	height: 80px;
 	width: 200px;
+}
+#kanatcha {
+	background-color: white;
+	margin: 1em 0;
+	padding: 1em;
+	width: 255px;
+}
+.selected {
+	font-weight: bold;
 }
