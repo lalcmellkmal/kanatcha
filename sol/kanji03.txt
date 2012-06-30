@@ -1,9 +1,9 @@
 旧:olden times
 自:oneself
 白:white
-百:hundred,hyaku
+百:hundred,100,hyaku
 中:in,chuu
-千:thousand,sen
+千:thousand,1000,sen
 舌:tongue
 升:measuring box
 昇:rise up
