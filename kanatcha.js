@@ -4,6 +4,7 @@ var config = require('./config').render,
 
 var questions = {};
 var answers = {};
+var hiragana = {};
 
 function makeQuestion(level) {
 	var q = [], bonus = level + 1;
@@ -104,9 +105,12 @@ function loadAnswers(file) {
 			console.warn("Bad solution line: " + line);
 			return;
 		}
-		if (m[1] in answers)
+		var key = m[1];
+		if (key in answers)
 			console.warn("Duplicate answer for " + m[1]);
-		answers[m[1]] = m[2].split(',');
+		answers[key] = m[2].split(',');
+		if (file.indexOf('hiragana') >= 0)
+			hiragana[key] = answers[key];
 	});
 }
 
@@ -118,7 +122,7 @@ function checkKana(thisAnswer, input) {
 		console.warn("Unknown char in target:", target[i]);
 		return false;
 	}
-	for (j = 0; j < ok.length; j++) {
+	for (var j = 0; j < ok.length; j++) {
 		var chunk = ok[j].toLowerCase().replace(/\s+/g, '');
 		if (!chunk) {
 			console.warn("Empty answer?!");
@@ -127,14 +131,27 @@ function checkKana(thisAnswer, input) {
 		var n = chunk.length;
 		if (input.slice(0, n) === chunk)
 			return n;
+
+		/* Allow (more) hiragana answers */
+		var chunkPos = 0;
+		for (var used = 0; used < input.length; ) {
+			var romaji = hiragana[input[used++]];
+			if (!romaji || !romaji[0])
+				break;
+			var n = romaji[0].length;
+			if (chunk.substr(chunkPos, n) != romaji[0])
+				break;
+			chunkPos += n;
+			if (chunkPos >= chunk.length)
+				return used;
+		}
 	}
 	return false;
 }
 
 function checkAnswer(target, input) {
-	var i, j;
 	input = input.toLowerCase().replace(/\s+/g, '');
-	for (i = 0; i < target.q.length; i++) {
+	for (var i = 0; i < target.q.length; i++) {
 		var used = checkKana(target.q[i], input);
 		if (used === false) {
 			/* Timing attacks you say

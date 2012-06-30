@@ -1,13 +1,13 @@
-三:three,3
-四:four,4
-五:five,5
-六:six,6
-七:seven,7
-八:eight,8
-九:nine,9
-十:ten,10
-口:mouth,opening
-日:day,sun
-月:month,moon
-田:rice field,field
-目:eye
+三:three,3,san
+四:four,4,shi,yon
+五:five,5,go
+六:six,6,roku
+七:seven,7,shichi,nana
+八:eight,8,hachi
+九:nine,9,kyuu,ku
+十:ten,10,jyuu,juu
+口:mouth,opening,kuchi
+日:day,sun,hi
+月:month,moon,getsu,tsuki
+田:rice field,field,den
+目:eye,me

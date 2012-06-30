@@ -1,5 +1,5 @@
-古:old
-吾:I
+古:old,furu
+吾:I,ware
 冒:risk
 朋:companion
 明:bright
@@ -8,7 +8,7 @@
 品:goods
 呂:spine
 昌:prosperous
-早:early
+早:early,haya
 旭:rising sun
 世:generation
 胃:stomach
