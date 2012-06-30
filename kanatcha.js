@@ -126,7 +126,7 @@ function checkKana(thisAnswer, input) {
 		return false;
 	}
 	for (var j = 0; j < ok.length; j++) {
-		var chunk = ok[j].toLowerCase().replace(/\s+/g, '');
+		var chunk = stripAnswer(ok[j]);
 		if (!chunk) {
 			console.warn("Empty answer?!");
 			continue;
@@ -153,7 +153,7 @@ function checkKana(thisAnswer, input) {
 }
 
 function checkAnswer(target, input) {
-	input = input.toLowerCase().replace(/\s+/g, '');
+	input = stripAnswer(input);
 	for (var i = 0; i < target.q.length; i++) {
 		var used = checkKana(target.q[i], input);
 		if (used === false) {
@@ -173,6 +173,10 @@ function checkAnswer(target, input) {
 	return input == '';
 }
 exports.checkAnswer = checkAnswer;
+
+function stripAnswer(input) {
+	return input.toLowerCase().replace(/[\s\-.]+/g, '');
+}
 
 function shuffle(array) {
 	for (var i = 1; i < array.length; i++) {
