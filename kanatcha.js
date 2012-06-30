@@ -2,10 +2,9 @@ var fs = require('fs'),
     imagemagick = require('imagemagick');
 
 var config = {
-	COUNT: 4,
 	FONT: 'hiragino.otf',
 	FONT_SIZE: 60,
-	IMAGE_SIZE: [200, 80],
+	IMAGE_SIZE: [250, 80],
 	SKEW: 0.4,
 	SPACING: 0.7,
 	TILT: [5, 10],
@@ -14,16 +13,48 @@ var config = {
 var questions = {};
 var answers = {};
 
+function makeQuestion(level) {
+	var q = [], bonus = level + 1;
+	switch (level) {
+	case 0:
+		q = [0, 0, 0, 0];
+		break;
+	case 1:
+		q = [1, 0, 0, 0];
+		break;
+	case 2:
+		q = [2, 1, 0, 0];
+		bonus = 0;
+		break;
+	}
+
+	/* Shuffle order */
+	if (bonus) {
+		/* But don't move the last one if there's a bonus */
+		var last = q.pop();
+		shuffle(q);
+		q.push(last);
+	}
+	else {
+		shuffle(q);
+	}
+
+	var question = {q: q.map(pickFromLevel).join('')};
+	if (bonus)
+		question.x = pickFromLevel(bonus);
+	return question;
+}
+
+function pickFromLevel(level) {
+	var set = questions[level ? 'kanji0' + level : 'hiragana'];
+	return set[Math.floor(set.length * Math.random())]
+}
+
 function loadQuestions(file, set) {
 	questions[set] = fs.readFileSync(file, 'UTF-8').replace(/\s+/g, '');
 }
 
-function pickKana(set) {
-	set = questions[set];
-	return set[Math.floor(set.length * Math.random())];
-}
-
-function blitString(string, size, pos, angle, args) {
+function blitString(string, color, size, pos, angle, args) {
 	var orig = angle;
 	angle *= Math.PI / 180;
 	var s = Math.sin(angle), c = Math.cos(angle);
@@ -34,26 +65,35 @@ function blitString(string, size, pos, angle, args) {
 	var skew = config.SKEW;
 	mat[2] += Math.random() * (skew * 2) - skew;
 	var spec = "text 0, 0 '" + string + "'";
-	args.push('-pointsize', size, '-affine', mat.join(','), '-draw', spec);
+	args.push('-pointsize', size, '-affine', mat.join(','), '-fill', color, '-draw', spec);
 	return mat[0] * size;
 }
 
-function makeCaptcha(file, callback) {
-	var size = config.FONT_SIZE;
-	var args = ['-size', config.IMAGE_SIZE.join('x'), 'canvas:white',
-			'-font', config.FONT];
-	var target = '';
-	var x = 0, y = size;
+function makeCaptcha(level, file, callback) {
+	/* Design */
+	var target = makeQuestion(level);
+	var chars = [];
+	for (var i = 0; i < target.q.length; i++)
+		chars.push({color: 'black', kana: target.q[i]});
+	if (target.x)
+		chars.push({color: 'gray', kana: target.x});
 	var tilt = config.TILT;
-	for (var i = 0; i < config.COUNT; i++) {
-		var kana = pickKana('hiragana');
-		target += kana;
+	chars.forEach(function (k) {
 		var angle = Math.random() * (tilt[1] - tilt[0]) + tilt[0];
 		if (Math.random() < 0.5)
 			angle = -angle;
-		var w = blitString(kana, size, [x, y], angle, args);
+		k.angle = angle;
+	});
+
+	/* Render */
+	var size = config.FONT_SIZE;
+	var args = ['-size', config.IMAGE_SIZE.join('x'), 'canvas:white',
+			'-font', config.FONT];
+	var x = 0, y = size;
+	chars.forEach(function (k) {
+		var w = blitString(k.kana, k.color, size, [x, y], k.angle, args);
 		x += w * (config.SPACING + Math.random() * 0.1);
-	}
+	});
 	args.push('-depth', '3', '-quality', '90', '-strip', 'PNG8:' + file);
 	imagemagick.convert(args, function (err, stdout, stderr) {
 		if (err)
@@ -78,41 +118,60 @@ function loadAnswers(file) {
 	});
 }
 
+function checkKana(thisAnswer, input) {
+	if (thisAnswer && input[0] === thisAnswer)
+		return 1;
+	var ok = answers[thisAnswer];
+	if (!ok) {
+		console.warn("Unknown char in target:", target[i]);
+		return false;
+	}
+	for (j = 0; j < ok.length; j++) {
+		var chunk = ok[j].toLowerCase().replace(/\s+/g, '');
+		if (!chunk) {
+			console.warn("Empty answer?!");
+			continue;
+		}
+		var n = chunk.length;
+		if (input.slice(0, n) === chunk)
+			return n;
+	}
+	return false;
+}
+
 function checkAnswer(target, input) {
 	var i, j;
 	input = input.toLowerCase().replace(/\s+/g, '');
-	for (i = 0; i < target.length; i++) {
-		var thisAnswer = target[i];
-		if (thisAnswer && input[0] === thisAnswer) {
-			input = input.slice(1);
-			continue;
-		}
-		var ok = answers[thisAnswer];
-		if (!ok) {
-			console.warn("Unknown char in target:", target[i]);
-			return false;
-		}
-		for (j = 0; j < ok.length; j++) {
-			var chunk = ok[j];
-			if (!chunk) {
-				console.warn("Empty answer?!");
-				continue;
-			}
-			var n = chunk.length;
-			if (input.slice(0, n) === chunk) {
-				input = input.slice(n);
-				break;
-			}
-		}
-		if (j == ok.length) {
+	for (i = 0; i < target.q.length; i++) {
+		var used = checkKana(target.q[i], input);
+		if (used === false) {
 			/* Timing attacks you say
 			   How about you timing attack my ass? */
 			return false;
 		}
+		input = input.slice(used);
+	}
+	/* Optional bonus */
+	if (target.x) {
+		if (checkKana(target.x, input) !== false)
+			return true;
+		else
+			return {x: answers[target.x][0]};
 	}
 	return input == '';
 }
 exports.checkAnswer = checkAnswer;
+
+function shuffle(array) {
+	for (var i = 1; i < array.length; i++) {
+		var j = Math.floor(Math.random() * (i+1));
+		if (j != i) {
+			var swap = array[i];
+			array[i] = array[j];
+			array[j] = swap;
+		}
+	}
+}
 
 function setup() {
 	var path = require('path')
@@ -130,5 +189,25 @@ function setup() {
 setup();
 
 if (require.main === module) {
-	makeCaptcha('captcha.png', console.log.bind(console));
+	var level = 0;
+	makeCaptcha(level, 'captcha.png', function (err, q) {
+		if (err)
+			throw err;
+		console.log('Answer?');
+		process.stdin.resume();
+		process.stdin.setEncoding('utf8');
+		process.stdin.once('data', function (input) {
+			process.stdin.pause();
+			var ans = checkAnswer(q, input);
+			if (ans) {
+				console.log('Correct!');
+				if (ans.x)
+					console.log('Bonus answer was: ' + ans.x);
+			}
+			else {
+				ans = q.q + (q.x ? ' ' + q.x : '');
+				console.log('Wrong! It was ' + ans);
+			}
+		});
+	});
 }

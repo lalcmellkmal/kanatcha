@@ -1,0 +1,13 @@
+三:three,3
+四:four,4
+五:five,5
+六:six,6
+七:seven,7
+八:eight,8
+九:nine,9
+十:ten,10
+口:mouth,opening
+日:day,sun
+月:month,moon
+田:rice field,field
+目:eye

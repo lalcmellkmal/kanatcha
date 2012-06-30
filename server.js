@@ -100,21 +100,32 @@ app.use(function (req, resp, next) {
 				return;
 			}
 			deleteImage(imageFilename(info.id));
-			if (!kanatcha.checkAnswer(info.target, input)) {
+			var answer = kanatcha.checkAnswer(info.target, input);
+			if (!answer) {
 				respond('Incorrect.');
 				return;
+			}
+			var extra = {success: true};
+			var praise = 'Correct!';
+			if (info.target.x) {
+				if (answer.x)
+					extra.bonus = {q: info.target.x, a: answer.x};
+				else
+					praise = 'Perfect!';
 			}
 
 			var handle = (req.body.handle || '');
 			handle = handle.replace(/\s+/g, ' ').trim().slice(0, 50);
 			if (!handle) {
-				respond('Correct!', {success: true});
+				respond(praise, extra);
 				return;
 			}
 			db.zincrby('kanatcha:scores', 1, handle, function (err, score) {
 				if (err)
 					console.warn(err);
-				respond('Correct!', {success: true, name: handle, score: score});
+				extra.name = handle;
+				extra.score = score;
+				respond(praise, extra);
 			});
 		});
 	}
@@ -162,7 +173,8 @@ function generate(cb) {
 		if (err)
 			return cb(err);
 		var filename = imageFilename(internalId);
-		kanatcha.makeCaptcha(filename, function (err, target) {
+		var level = 0;
+		kanatcha.makeCaptcha(level, filename, function (err, target) {
 			if (err)
 				return cb(err);
 			var externalId = generateExternalId();

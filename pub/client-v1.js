@@ -1,6 +1,6 @@
 (function () {
 
-var $img, $prompt, $input;
+var $img, $prompt, $hint, $input;
 var refreshReq, submitReq, challengeId;
 var highlightTimer;
 
@@ -54,7 +54,7 @@ function submit() {
 }
 
 function onVerdict(data) {
-	advise(data.msg);
+	advise(data);
 	if (data.success) {
 		$prompt.css('color', '#00d');
 		if (highlightTimer)
@@ -80,22 +80,29 @@ function onVerdict(data) {
 
 function fail(message) {
 	$prompt.text(message).css({color: 'red'});
+	$hint.hide();
 }
 
-function advise(message) {
-	$prompt.text(message).css({color: 'inherit'});
+function advise(info) {
+	if (info.msg)
+		$prompt.text(info.msg).css({color: 'inherit'});
+	if (info.bonus)
+		$hint.text(info.bonus.q + " = " + info.bonus.a).show();
+	else
+		$hint.hide();
 }
 
 function install($target) {
-	$img = $('<img>').css({width: 200, height: 80});
-	$prompt = $('<p>Type in the kana.</p>');
-	$input = $('<input>').on('keydown', function (event) {
+	$img = $('<img>', {width: 250, height: 80});
+	$prompt = $('<span>Type in the kana.</span>');
+	$hint = $('<span/>', {css: {color: 'gray'}}).hide();
+	$input = $('<input>', {width: 240}).on('keydown', function (event) {
 		if (event.which == 13) {
 			submit();
 			event.stopPropagation();
 		}
 	});
-	$target.append($prompt, $img, '<br>', $input);
+	$target.append($prompt, ' ', $hint, '<br>', $img, '<br>', $input);
 	loadCaptcha();
 }
 
