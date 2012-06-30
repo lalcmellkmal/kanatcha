@@ -1,11 +1,12 @@
-var connect = require('connect'),
+var config = require('./config'),
+    connect = require('connect'),
     fs = require('fs'),
     kanatcha = require('./kanatcha'),
     urlParse = require('url').parse;
 
 var db = require('redis').createClient();
 
-var TIMEOUT = 60;
+var TIMEOUT = config.public.timeout;
 
 var app = connect();
 app.use(connect.static('pub'));
@@ -145,7 +146,12 @@ app.use(function (req, resp, next) {
 		next();
 });
 
-var indexHtml = fs.readFileSync('index.html', 'UTF-8').replace('$MAX', kanatcha.maxLevel);
+function generateIndexHtml() {
+	var html = fs.readFileSync('index.html', 'UTF-8');
+	return html.replace('$CONFIG', JSON.stringify(config.public));
+}
+
+var indexHtml = generateIndexHtml();
 
 var noCacheJsonHeaders = {
 	'Content-Type': 'application/json',
@@ -154,7 +160,7 @@ var noCacheJsonHeaders = {
 };
 
 function parseLevel(level) {
-	return Math.max(0, Math.min(kanatcha.maxLevel, parseInt(level, 10) || 0));
+	return Math.max(0, Math.min(config.public.maxLevel, parseInt(level, 10) || 0));
 }
 
 function scoresKey(level) {

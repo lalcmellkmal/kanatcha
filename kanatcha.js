@@ -1,19 +1,9 @@
-var fs = require('fs'),
+var config = require('./config').render,
+    fs = require('fs'),
     imagemagick = require('imagemagick');
-
-var config = {
-	FONT: 'hiragino.otf',
-	FONT_SIZE: 60,
-	IMAGE_SIZE: [250, 80],
-	SKEW: 0.4,
-	SPACING: 0.7,
-	TILT: [5, 10],
-};
 
 var questions = {};
 var answers = {};
-
-exports.maxLevel = 2;
 
 function makeQuestion(level) {
 	var q = [], bonus = level + 1;
@@ -64,7 +54,7 @@ function blitString(string, color, size, pos, angle, args) {
 	var xoff = mid - (c * mid + s * mid);
 	var yoff = mid - (c * mid - s * mid);
 	var mat = [c, s, -s, c, pos[0] + xoff, pos[1] - yoff];
-	var skew = config.SKEW;
+	var skew = config.skew;
 	mat[2] += Math.random() * (skew * 2) - skew;
 	var spec = "text 0, 0 '" + string + "'";
 	args.push('-pointsize', size, '-affine', mat.join(','), '-fill', color, '-draw', spec);
@@ -79,7 +69,7 @@ function makeCaptcha(level, file, callback) {
 		chars.push({color: 'black', kana: target.q[i]});
 	if (target.x)
 		chars.push({color: 'gray', kana: target.x});
-	var tilt = config.TILT;
+	var tilt = config.tilt;
 	chars.forEach(function (k) {
 		var angle = Math.random() * (tilt[1] - tilt[0]) + tilt[0];
 		if (Math.random() < 0.5)
@@ -88,13 +78,13 @@ function makeCaptcha(level, file, callback) {
 	});
 
 	/* Render */
-	var size = config.FONT_SIZE;
-	var args = ['-size', config.IMAGE_SIZE.join('x'), 'canvas:white',
-			'-font', config.FONT];
+	var size = config.fontSize;
+	var args = ['-size', config.imageSize.join('x'), 'canvas:white',
+			'-font', config.font];
 	var x = 0, y = size;
 	chars.forEach(function (k) {
 		var w = blitString(k.kana, k.color, size, [x, y], k.angle, args);
-		x += w * (config.SPACING + Math.random() * 0.1);
+		x += w * (config.spacing + Math.random() * 0.1);
 	});
 	args.push('-depth', '3', '-quality', '90', '-strip', 'PNG8:' + file);
 	imagemagick.convert(args, function (err, stdout, stderr) {

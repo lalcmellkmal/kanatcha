@@ -147,7 +147,7 @@ function levelName(level) {
 
 function setupNav() {
 	$nav = $('nav').append('Level: ');
-	for (var i = 0; i <= maxLevel; i++)
+	for (var i = 0; i <= config.maxLevel; i++)
 		$nav.append($('<a>', {href: i, text: i || 'hiragana'}), ' ');
 	$nav.on('click', 'a', function (event) {
 		event.preventDefault();
