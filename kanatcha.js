@@ -17,6 +17,9 @@ function makeQuestion(level) {
 		break;
 	case 2:
 		q = [2, 1, 0, 0];
+		break;
+	case 3:
+		q = [3, 2, 0, 0];
 		bonus = 0;
 		break;
 	}

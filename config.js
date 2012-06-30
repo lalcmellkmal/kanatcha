@@ -8,7 +8,7 @@ module.exports = {
 		tilt: [5, 10],
 	},
 	public: {
-		maxLevel: 2,
+		maxLevel: 3,
 		timeout: 60,
 	},
 };
