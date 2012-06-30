@@ -11,15 +11,16 @@ var config = {
 	TILT: [5, 10],
 };
 
-var allKana;
+var questions = {};
 var answers = {};
 
-function loadQuestions(file) {
-	allKana = fs.readFileSync(file, 'UTF-8').replace(/\s+/g, '');
+function loadQuestions(file, set) {
+	questions[set] = fs.readFileSync(file, 'UTF-8').replace(/\s+/g, '');
 }
 
-function pickKana() {
-	return allKana[Math.floor(allKana.length * Math.random())];
+function pickKana(set) {
+	set = questions[set];
+	return set[Math.floor(set.length * Math.random())];
 }
 
 function blitString(string, size, pos, angle, args) {
@@ -45,7 +46,7 @@ function makeCaptcha(file, callback) {
 	var x = 0, y = size;
 	var tilt = config.TILT;
 	for (var i = 0; i < config.COUNT; i++) {
-		var kana = pickKana();
+		var kana = pickKana('hiragana');
 		target += kana;
 		var angle = Math.random() * (tilt[1] - tilt[0]) + tilt[0];
 		if (Math.random() < 0.5)
@@ -63,7 +64,7 @@ function makeCaptcha(file, callback) {
 exports.makeCaptcha = makeCaptcha;
 
 function loadAnswers(file) {
-	file.split('\n').forEach(function (line) {
+	fs.readFileSync(file, 'UTF-8').split('\n').forEach(function (line) {
 		if (!line.trim())
 			return;
 		var m = line.match(/^(.):(.+)\s*$/);
@@ -114,12 +115,15 @@ function checkAnswer(target, input) {
 exports.checkAnswer = checkAnswer;
 
 function setup() {
+	var path = require('path')
 	fs.readdirSync('lvl').forEach(function (txt) {
-		loadQuestions(require('path').join('lvl', txt));
+		var m = txt.match(/^(.+)\.txt$/);
+		if (!m)
+			return;
+		loadQuestions(path.join('lvl', txt), m[1]);
 	});
 	fs.readdirSync('sol').forEach(function (txt) {
-		txt = require('path').join('sol', txt);
-		loadAnswers(fs.readFileSync(txt, 'UTF-8'));
+		loadAnswers(path.join('sol', txt));
 	});
 }
 
