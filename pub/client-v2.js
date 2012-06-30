@@ -114,7 +114,7 @@ function timeExpired() {
 
 function install($target) {
 	$img = $('<img>', {width: 250, height: 80});
-	$prompt = $('<span>Type in the kana.</span>');
+	$prompt = $('<span>Type in the characters.</span>');
 	$hint = $('<span/>', {css: {color: 'gray'}}).hide();
 	$input = $('<input>', {width: 240}).on('keydown', function (event) {
 		if (event.which == 13) {
