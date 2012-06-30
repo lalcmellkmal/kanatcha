@@ -6,7 +6,7 @@ var config = require('./config'),
 
 var db = require('redis').createClient();
 
-var TIMEOUT = config.public.timeout;
+var TIMEOUT = config.public.timeout + 3;
 
 var app = connect();
 app.use(connect.static('pub'));

@@ -2,7 +2,7 @@
 
 var $img, $prompt, $hint, $input;
 var refreshReq, submitReq, challengeId;
-var highlightTimer;
+var highlightTimer, expiryTimer;
 
 var $handle, $scores, $nav;
 var kanjiLevel = -1;
@@ -21,6 +21,9 @@ function loadCaptcha() {
 		error: onError,
 		complete: function () { refreshReq = null; },
 	});
+	if (expiryTimer)
+		clearTimeout(expiryTimer);
+	expiryTimer = setTimeout(timeExpired, config.timeout * 1000);
 }
 
 function onChallenge(data) {
@@ -53,6 +56,10 @@ function submit() {
 		error: onError,
 		complete: function () { submitReq = null; },
 	});
+	if (expiryTimer) {
+		clearTimeout(expiryTimer);
+		expiryTimer = 0;
+	}
 }
 
 function onVerdict(data) {
@@ -92,6 +99,17 @@ function advise(info) {
 		$hint.text(info.bonus.q + " = " + info.bonus.a).show();
 	else
 		$hint.hide();
+}
+
+function timeExpired() {
+	expiryTimer = 0;
+	$prompt.text('Time expired.');
+	var $retry = $('<input type=button value="Try again.">').click(function () {
+			loadCaptcha();
+			$prompt.text('');
+			$retry.remove();
+	});
+	$hint.empty().append($retry).show();
 }
 
 function install($target) {
