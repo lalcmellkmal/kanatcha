@@ -113,8 +113,7 @@ app.use(function (req, resp, next) {
 					praise = 'Perfect!';
 			}
 
-			var handle = (req.body.handle || '');
-			handle = handle.replace(/\s+/g, ' ').trim().slice(0, 50);
+			var handle = parseHandle(req.body.handle);
 			if (!handle) {
 				respond(praise, extra);
 				return;
@@ -130,14 +129,29 @@ app.use(function (req, resp, next) {
 	}
 	else if (u.pathname == '/scores' && verb == 'GET') {
 		var level = parseLevel(u.query.level);
-		db.zrevrange(scoresKey(level), 0, 20, 'withscores', function (err, scores) {
+		var handle = parseHandle(u.query.handle);
+
+		var key = scoresKey(level);
+		var m = db.multi();
+		m.zrevrange(key, 0, config.public.scoreboardLength, 'withscores');
+		if (handle)
+			m.zscore(key, handle);
+		m.exec(function (err, rs) {
 			if (err) {
 				resp.writeHead(500);
 				resp.end();
+				return;
 			}
+			var scores = rs[0], ownScore = rs[1], seenSelf = false;
 			var ranks = [];
-			for (var i = 0; i < scores.length; i += 2)
-				ranks.push({name: scores[i], score: scores[i+1]});
+			for (var i = 0; i < scores.length; i += 2) {
+				var name = scores[i];
+				ranks.push({name: name, score: scores[i+1]});
+				if (name == handle)
+					seenSelf = true;
+			}
+			if (!seenSelf && ownScore)
+				ranks.push({name: '...'}, {name: handle, score: ownScore});
 			resp.writeHead(200, noCacheJsonHeaders);
 			resp.end(JSON.stringify({scores: ranks}));
 		});
@@ -161,6 +175,10 @@ var noCacheJsonHeaders = {
 
 function parseLevel(level) {
 	return Math.max(0, Math.min(config.public.maxLevel, parseInt(level, 10) || 0));
+}
+
+function parseHandle(handle) {
+	return (handle || '').replace(/\s+/g, ' ').trim().slice(0, 50);
 }
 
 function scoresKey(level) {

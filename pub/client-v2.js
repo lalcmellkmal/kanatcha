@@ -140,7 +140,7 @@ function getScores() {
 
 	var level = kanjiLevel;
 	pollReq = $.ajax('scores', {
-		data: {level: level},
+		data: {level: level, handle: $handle.val()},
 		dataType: 'json',
 		success: function (data) {
 			$scores.empty();
@@ -187,8 +187,8 @@ function changeLevel(n) {
 }
 
 $(function () {
-	setupNav();
 	$handle = $('#name').val(localStorage.getItem('captchaName'));
+	setupNav();
 	$scores = $('<table/>').css('float', 'right').prependTo('body');
 	getScores();
 	install($('#kanatcha'));

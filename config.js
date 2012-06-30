@@ -10,5 +10,6 @@ module.exports = {
 	public: {
 		maxLevel: 3,
 		timeout: 60,
+		scoreboardLength: 20,
 	},
 };
